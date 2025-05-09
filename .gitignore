@@ -1,0 +1,48 @@
+# === FRONTEND (React / Node) ===
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+frontend/.next/
+frontend/package-lock.json
+frontend/yarn.lock
+frontend/npm-debug.log
+
+# === BACKEND (Python / Flask) ===
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/env/
+backend/venv/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/debug.log
+backend/.coverage
+backend/coverage.xml
+
+# === SHARED / TEMP / STATIC ===
+shared/__pycache__/
+shared/*.tmp
+shared/*.log
+backend/static/generated/
+backend/static/tmp/
+
+# === SYSTEM / DOCKER ===
+.dockerignore
+*.pid
+*.log
+*.sock
+
+# === ENV SYSTEM / CODESPACES / IDE ===
+.env
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+
+# === TEST / CI ===
+coverage/
+.nyc_output/
+.cache/
+jest.config.js
