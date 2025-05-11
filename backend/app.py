@@ -6,7 +6,7 @@ from collections import Counter
 app = Flask(__name__)
 CORS(app)  # Autorise toutes les origines
 
-API_KEY = "RGAPI-d57b1562-ee11-402f-82ea-8ad51ad9033f"  # Remplace par ta clé valide
+API_KEY = "xxxxxxxxxxxxxx"  # Remplace par ta clé valide
 HEADERS = {"X-Riot-Token": API_KEY}
 
 def average_stats(stat_list):
