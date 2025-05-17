@@ -2,11 +2,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 from collections import Counter
+from collections import defaultdict
 
 app = Flask(__name__)
 CORS(app)  # Autorise toutes les origines
 
-API_KEY = "RGAPI-d57b1562-ee11-402f-82ea-8ad51ad9033f"  # Remplace par ta clé valide
+API_KEY = "RGAPI-2a8b71ed-7e92-4e9b-9842-e589202f620e"  # Remplace par ta clé valide
 HEADERS = {"X-Riot-Token": API_KEY}
 
 def average_stats(stat_list):
@@ -139,12 +140,27 @@ def analyze():
     archetype = detect_archetype(avg)
     profile = generate_profile(avg)
 
+    summary = defaultdict(lambda: {"wins": 0, "losses": 0})
+    for s in stats:
+        champ = s["champion"]
+        if s["win"]:
+            summary[champ]["wins"] += 1
+        else:
+            summary[champ]["losses"] += 1
+
+    # Converti en liste triée
+    champion_summary = sorted([
+        {"champion": champ, **data, "total": data["wins"] + data["losses"]}
+        for champ, data in summary.items()
+    ], key=lambda x: x["total"], reverse=True)
+
     return jsonify({
     "role": role,
     "archetype": archetype,
     "avg_stats": avg,
     "profile": profile,
     "match_count": len(stats),
+    "champion_summary": champion_summary,
     "match_list": [
         {
             "champion": s["champion"],

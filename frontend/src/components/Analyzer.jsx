@@ -104,6 +104,31 @@ function Analyzer() {
             <h3 className="font-semibold">📌 Statistiques moyennes par thème :</h3>
             {groupStats(data.avg_stats)}
           </div>
+
+          {data.champion_summary && (
+            <div>
+              <h3 className="font-semibold mt-4">🏆 Résumé par champion :</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
+                {data.champion_summary.map((champ) => (
+                  <div key={champ.champion} className="flex items-center space-x-2 border p-2 rounded shadow">
+                    <img
+                      src={`https://ddragon.leagueoflegends.com/cdn/14.9.1/img/champion/${champ.champion}.png`}
+                      alt={champ.champion}
+                      className="w-12 h-12"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/48";
+                      }}
+                    />
+                    <div>
+                      <p className="font-medium">{champ.champion}</p>
+                      <p className="text-sm">{champ.wins} victoires – {champ.losses} défaites</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
