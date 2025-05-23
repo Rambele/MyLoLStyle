@@ -7,7 +7,7 @@ from collections import defaultdict
 app = Flask(__name__)
 CORS(app)  # Autorise toutes les origines
 
-API_KEY = "RGAPI-2a8b71ed-7e92-4e9b-9842-e589202f620e"  # Remplace par ta clé valide
+API_KEY = "RGAPI-059be12d-57cf-4c88-93f7-d4a832be0f27"  # Remplace par ta clé valide
 HEADERS = {"X-Riot-Token": API_KEY}
 
 def average_stats(stat_list):
@@ -169,6 +169,34 @@ def analyze():
         for s in stats
     ]
 })
+
+@app.route("/analyze-team", methods=["POST"])
+def analyze_team():
+    data = request.json
+    players = data.get("players", [])  # ex: [{"name": "Unna78", "tag": "EUW"}, ...]
+
+    if len(players) != 5:
+        return jsonify({"error": "5 joueurs sont requis"}), 400
+
+    from copy import deepcopy
+    all_stats = []
+    for p in players:
+        puuid = get_puuid(p["name"], p["tag"])
+        if not puuid:
+            continue
+        _, stats = analyze_player(puuid)
+        avg = average_stats(stats)
+        all_stats.append(avg)
+
+    # Somme de toutes les stats d’équipe
+    team_stats = defaultdict(float)
+    for stat in all_stats:
+        for key, val in stat.items():
+            if isinstance(val, (int, float)):
+                team_stats[key] += val
+
+    return jsonify(dict(team_stats))
+
 
 if __name__ == "__main__":
     app.run(debug=True)

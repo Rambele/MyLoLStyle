@@ -1,148 +1,118 @@
 import requests
-from collections import Counter
+import time
+import json
 
-API_KEY = "RGAPI-1f093953-fc54-49a9-b826-b91e5d79b7bb"
-GAME_NAME = "Unna78"
-TAG_LINE = "EUW"
+API_KEY = "RGAPI-9aec9d31-ad93-4edd-b3b8-43fa17d8af06"
+REGION = "euw1"
+MATCH_REGION = "europe"
 HEADERS = {"X-Riot-Token": API_KEY}
+LOG_FILE = "smartstat_pyke_log.json"
 
-def average_stats(stat_list):
-    if not stat_list:
-        return {}
 
-    total = {}
-    count = len(stat_list)
-
-    for game in stat_list:
-        for key, value in game.items():
-            if isinstance(value, (int, float)):  # Ne garde que les nombres
-                total[key] = total.get(key, 0) + value
-
-    return {key: round(val / count, 3) for key, val in total.items()}
-
-def detect_archetype(avg):
-    if avg.get("shield%", 0) + avg.get("heal%", 0) > 1.2 and avg.get("ccTime%", 0) > 0.25:
-        return "Support Pillar"
-    elif avg.get("kp%", 0) > 0.65 and (avg.get("detectors%", 0) + avg.get("wardsKilled%", 0)) > 0.6:
-        return "Roamer / Playmaker"
-    elif avg.get("tank%", 0) > 0.25 and avg.get("detectors%", 0) > 0.4:
-        return "Tank Utility"
-    elif avg.get("dmg%", 0) > 0.25 and avg.get("kp%", 0) > 0.6 and avg.get("cs%", 0) > 0.2:
-        return "Carry Jungler / ADC"
-    elif avg.get("dmg%", 0) < 0.15 and avg.get("kp%", 0) < 0.5 and avg.get("detectors%", 0) < 0.3:
-        return "Ghost / Low impact"
-    else:
-        return "Joueur équilibré / mixte"
-
-def generate_profile(avg):
-    def tag(value, low, mid, high):
-        if value < low:
-            return "faible"
-        elif value < mid:
-            return "moyen"
-        elif value < high:
-            return "élevé"
+def get_diamond_players():
+    url = f"https://{REGION}.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/SILVER/I?page=1"
+    res = requests.get(url, headers=HEADERS)
+    try:
+        data = res.json()
+        if isinstance(data, list):
+            return data
         else:
-            return "très élevé"
-
-    return {
-        "vision": tag(avg.get("wardsPlaced%", 0) + avg.get("detectors%", 0), 0.3, 0.5, 0.7),
-        "protection": tag(avg.get("shield%", 0) + avg.get("heal%", 0), 0.4, 0.8, 1.2),
-        "impact_teamfight": tag(avg.get("kp%", 0), 0.4, 0.6, 0.75),
-        "contrôle": tag(avg.get("ccTime%", 0), 0.1, 0.25, 0.4),
-        "agressivité": tag(avg.get("dmg%", 0), 0.15, 0.25, 0.35)
-    }
+            print("⚠️ Problème avec la réponse:", data)
+            return []
+    except Exception as e:
+        print("❌ JSON parsing failed", e)
+        return []
 
 
-
-def get_puuid(game_name, tag_line):
-    url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
+def get_summoner_by_name(summoner_name):
+    url = f"https://{REGION}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}"
     res = requests.get(url, headers=HEADERS)
-    return res.json()["puuid"] if res.status_code == 200 else None
+    return res.json()
 
-def get_match_ids(puuid, count=50):
-    url = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count={count}&queue=420"
+
+def get_match_ids(puuid):
+    url = f"https://{MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=30"
     res = requests.get(url, headers=HEADERS)
-    return res.json() if res.status_code == 200 else []
+    return res.json()
 
-def get_match_info(match_id):
-    url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}"
+
+def get_match_data(match_id):
+    url = f"https://{MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/{match_id}"
     res = requests.get(url, headers=HEADERS)
-    return res.json() if res.status_code == 200 else None
+    return res.json()
 
-def analyze_player(puuid):
-    match_ids = get_match_ids(puuid)
-    roles = []
-    match_stats = []
 
-    for match_id in match_ids:
-        match = get_match_info(match_id)
-        if not match:
+def log_progress(log_data):
+    with open(LOG_FILE, "w") as f:
+        json.dump(log_data, f, indent=2)
+
+
+def load_logged_summoners():
+    try:
+        with open(LOG_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {"processed": []}
+
+
+def analyze_pyke_winrate():
+    log = load_logged_summoners()
+    processed_names = set(log["processed"])
+
+    players = get_diamond_players()
+    total_games = 0
+    pyke_wins = 0
+
+    for p in players:
+        if "summonerName" not in p:
             continue
-        for p in match["info"]["participants"]:
-            if p["puuid"] == puuid:
-                roles.append(p["teamPosition"])
-                match_stats.append((match, p))
-                break
 
-    dominant_role = Counter(roles).most_common(1)[0][0]
-    filtered = [(m, p) for (m, p) in match_stats if p["teamPosition"] == dominant_role]
-    result = []
+        name = p["summonerName"]
+        if name in processed_names:
+            continue
 
-    for match, player_data in filtered:
-        team = [p for p in match["info"]["participants"] if p["teamId"] == player_data["teamId"]]
+        try:
+            summoner = get_summoner_by_name(name)
+            if summoner.get("summonerLevel", 0) < 200:
+                continue
+        except:
+            continue
 
-        def percent(val, total):
-            return round(val / total, 3) if total else 0
+        puuid = summoner["puuid"]
+        try:
+            match_ids = get_match_ids(puuid)
+        except:
+            continue
 
-        total = {
-            "damage": sum(p["totalDamageDealtToChampions"] for p in team),
-            "taken": sum(p["totalDamageTaken"] for p in team),
-            "kills": sum(p["kills"] for p in team),
-            "cs": sum(p["totalMinionsKilled"] + p["neutralMinionsKilled"] for p in team),
-            "wardsPlaced": sum(p["wardsPlaced"] for p in team),
-            "wardsKilled": sum(p["wardsKilled"] for p in team),
-            "detectors": sum(p["detectorWardsPlaced"] for p in team),
-            "shields": sum(p.get("totalDamageShieldedOnTeammates", 0) for p in team),
-            "heals": sum(p.get("totalHealsOnTeammates", 0) for p in team),
-            "cc": sum(p["timeCCingOthers"] for p in team)
+        for match_id in match_ids:
+            try:
+                match = get_match_data(match_id)
+                for participant in match["info"]["participants"]:
+                    if participant["puuid"] == puuid and participant["championName"] == "Pyke":
+                        total_games += 1
+                        if participant["win"]:
+                            pyke_wins += 1
+            except:
+                continue
 
-        }
+            time.sleep(1)  # pour respecter les quotas
 
-        player_stats = {
-            "champion": player_data["championName"],
-            "dmg%": percent(player_data["totalDamageDealtToChampions"], total["damage"]),
-            "tank%": percent(player_data["totalDamageTaken"], total["taken"]),
-            "kp%": percent(player_data["kills"] + player_data["assists"], total["kills"]),
-            "cs%": percent(player_data["totalMinionsKilled"] + player_data["neutralMinionsKilled"], total["cs"]),
-            "wardsPlaced%": percent(player_data["wardsPlaced"], total["wardsPlaced"]),
-            "wardsKilled%": percent(player_data["wardsKilled"], total["wardsKilled"]),
-            "detectors%": percent(player_data["detectorWardsPlaced"], total["detectors"]),
-            "shield%": percent(player_data.get("totalDamageShieldedOnTeammates", 0), total["shields"]),
-            "heal%": percent(player_data.get("totalHealsOnTeammates", 0), total["heals"]),
-            "ccTime%": percent(player_data["timeCCingOthers"], total["cc"])
-            
-        }
+        print(f"✅ Traité: {name} — Total Pyke games: {total_games}")
+        processed_names.add(name)
+        log["processed"].append(name)
+        log_progress(log)
 
-        result.append(player_stats)
+        time.sleep(1)
 
-    return dominant_role, result
+        if total_games >= 50:  # Limite temporaire pour test
+            break
+
+    if total_games == 0:
+        print("Aucune partie trouvée avec Pyke.")
+    else:
+        winrate = (pyke_wins / total_games) * 100
+        print(f"\n📊 Pyke Win Rate : {winrate:.2f}% ({pyke_wins}/{total_games})")
+
 
 if __name__ == "__main__":
-    puuid = get_puuid(GAME_NAME, TAG_LINE)
-    if puuid:
-        role, stats = analyze_player(puuid)
-        print(f"Rôle dominant : {role}\n")
-        avg = average_stats(stats)
-        print(f"Rôle dominant : {role}")
-        print(f"\n📈 Moyenne sur {len(stats)} games :")
-        for k, v in avg.items():
-            print(f"{k}: {v}")
-        archetype = detect_archetype(avg)
-        print(f"\n🧠 Archétype détecté : {archetype}")
-        profile = generate_profile(avg)
-        print("\n📊 Profil multidimensionnel :")
-        for k, v in profile.items():
-            print(f"- {k.capitalize()} : {v}")
-    else:
-        print("PUUID non trouvé.")
+    analyze_pyke_winrate()
