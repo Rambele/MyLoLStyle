@@ -25,7 +25,6 @@ def percent(val, total):
 def analyze_player(puuid):
     match_ids = get_match_ids(puuid)
     stats = []
-    roles = []
 
     for match_id in match_ids:
         match = get_match_info(match_id)
@@ -37,10 +36,13 @@ def analyze_player(puuid):
         if not player_data:
             continue
 
-        roles.append(player_data["teamPosition"])
+        role = player_data["teamPosition"]
         team_id = player_data["teamId"]
-        team = [p for p in participants if p["teamId"] == team_id]
+        enemy_team = [p for p in participants if p["teamId"] != team_id]
+        same_role_enemy = next((p for p in enemy_team if p["teamPosition"] == role), None)
 
+        # équipe du joueur
+        team = [p for p in participants if p["teamId"] == team_id]
         total = {
             "damage": sum(p["totalDamageDealtToChampions"] for p in team),
             "taken": sum(p["totalDamageTaken"] for p in team),
@@ -54,8 +56,9 @@ def analyze_player(puuid):
             "cc": sum(p["timeCCingOthers"] for p in team)
         }
 
-        stats.append({
+        player_stats = {
             "champion": player_data["championName"],
+            "win": player_data["win"],
             "dmg%": percent(player_data["totalDamageDealtToChampions"], total["damage"]),
             "tank%": percent(player_data["totalDamageTaken"], total["taken"]),
             "kp%": percent(player_data["kills"] + player_data["assists"], total["kills"]),
@@ -65,9 +68,36 @@ def analyze_player(puuid):
             "detectors%": percent(player_data["detectorWardsPlaced"], total["detectors"]),
             "shield%": percent(player_data.get("totalDamageShieldedOnTeammates", 0), total["shields"]),
             "heal%": percent(player_data.get("totalHealsOnTeammates", 0), total["heals"]),
-            "ccTime%": percent(player_data["timeCCingOthers"], total["cc"]),
-            "win": player_data["win"]
-        })
+            "ccTime%": percent(player_data["timeCCingOthers"], total["cc"])
+        }
+
+        if same_role_enemy:
+            enemy_stats = {
+                "dmg%_enemy": percent(same_role_enemy["totalDamageDealtToChampions"],
+                                      sum(p["totalDamageDealtToChampions"] for p in enemy_team)),
+                "tank%_enemy": percent(same_role_enemy["totalDamageTaken"],
+                                       sum(p["totalDamageTaken"] for p in enemy_team)),
+                "kp%_enemy": percent(same_role_enemy["kills"] + same_role_enemy["assists"],
+                                     sum(p["kills"] for p in enemy_team)),
+                "cs%_enemy": percent(same_role_enemy["totalMinionsKilled"] + same_role_enemy["neutralMinionsKilled"],
+                                     sum(p["totalMinionsKilled"] + p["neutralMinionsKilled"] for p in enemy_team)),
+                "wardsPlaced%_enemy": percent(same_role_enemy["wardsPlaced"],
+                                              sum(p["wardsPlaced"] for p in enemy_team)),
+                "wardsKilled%_enemy": percent(same_role_enemy["wardsKilled"],
+                                              sum(p["wardsKilled"] for p in enemy_team)),
+                "detectors%_enemy": percent(same_role_enemy["detectorWardsPlaced"],
+                                            sum(p["detectorWardsPlaced"] for p in enemy_team)),
+                "shield%_enemy": percent(same_role_enemy.get("totalDamageShieldedOnTeammates", 0),
+                                         sum(p.get("totalDamageShieldedOnTeammates", 0) for p in enemy_team)),
+                "heal%_enemy": percent(same_role_enemy.get("totalHealsOnTeammates", 0),
+                                       sum(p.get("totalHealsOnTeammates", 0) for p in enemy_team)),
+                "ccTime%_enemy": percent(same_role_enemy["timeCCingOthers"],
+                                         sum(p["timeCCingOthers"] for p in enemy_team))
+            }
+        else:
+            enemy_stats = {k + "_enemy": None for k in list(player_stats.keys())[2:]}
+
+        stats.append({**player_stats, **enemy_stats})
 
     return stats
 
@@ -87,7 +117,14 @@ def main():
         print(f"\nMatch {i} - {s['champion']} - {'Victoire' if s['win'] else 'Défaite'}")
         for key in s:
             if key not in ["champion", "win"]:
-                print(f"  {key}: {s[key]}")
+                val = s[key]
+                if "_enemy" in key:
+                    base_key = key.replace("_enemy", "")
+                    print(f"  {base_key:14s} ennemi: {val}")
+                elif f"{key}_enemy" in s:
+                    print(f"  {key:14s}: {val}", end="")
+                else:
+                    print(f"  {key:14s}: {val}")
 
 if __name__ == "__main__":
     main()
