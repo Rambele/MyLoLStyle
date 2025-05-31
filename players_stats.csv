@@ -1,2 +1,2 @@
-Nom,Tier,Rank,LP,Nb_Games,Winrate,Score_Diff,dmg%_diff,tank%_diff,gold%_diff,xp%_diff,ccTime%_diff,kp%_diff
-"Rambel,EUW",,,,,,,,,,,,
+name,role,rank,lp,games,winrate,dmg%_diff,tank%_diff,kp%_diff,cs%_diff,wardsPlaced%_diff,wardsKilled%_diff,detectors%_diff,gold%_diff,heal%_diff,shield%_diff,ccTime%_diff,kill%_diff,death%_diff,assist%_diff,total_stats_diff
+Rambel#EUW,UTILITY,Gold III,90,22,0.5,-0.502,-0.125,0.168,-0.869,1.529,0.899,0.79,-0.283,-0.056,-0.045,0.583,-0.663,0.234,0.749,2.409

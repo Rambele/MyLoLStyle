@@ -175,7 +175,7 @@ def main():
         print(f"{key:<14s}: {round(total / n, 3):+}")
     
         # Calcul du score global filtré 
-    excluded_keys = ['cs%_diff', 'assist%_diff' , 'death%_diff']
+    excluded_keys = [] #'cs%_diff', 'assist%_diff' , 'death%_diff'
     custom_score = sum(
         total / n for key, total in diff_totaux.items() if key not in excluded_keys
     )
