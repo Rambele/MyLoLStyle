@@ -1,7 +1,7 @@
 import requests
 from collections import Counter
 
-API_KEY = "RGAPI-e5e8bf82-fe53-4ac3-9e71-74d250430dab"  # Remplace par ta clé Riot valide
+API_KEY = "RGAPI-eb20471f-165e-48be-bb55-44ad575ef5da"  # Remplace par ta clé Riot valide
 HEADERS = {"X-Riot-Token": API_KEY}
 
 def get_puuid(game_name, tag_line):
