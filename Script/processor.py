@@ -43,7 +43,7 @@ def printPlayerStats(data_player) :
         value = challenges.get(stat, 'Non disponible')
         print(f"{stat} : {value}")
 
-def printPlayerAttckStats(data_player):
+def printPlayerStats1(data_player):
     dmg_to_champs = data_player.get('totalDamageDealtToChampions', 0)
     dmg_to_turrets = data_player.get('damageDealtToTurrets', 0)
     dmg_to_buildings = data_player.get('damageDealtToBuildings', 0)
@@ -141,25 +141,105 @@ def printPlayerAttckStats(data_player):
     return [dmg_to_buildings, dmg_to_objectives, dmg_to_turrets, 0, dmg_to_champs]  # même ordre que ton exemple
 
         
+#=========
+def player_impact_in_game(game_data, player_puuid):
+    # Trouver le joueur à partir de son puuid
+    player_data = next((p for p in game_data['info']['participants'] if p['puuid'] == player_puuid), None)
+    if not player_data:
+        return None
 
+    # Extraire les données de l'équipe du joueur
+    team_id = player_data['teamId']
+    team_players = [p for p in game_data['info']['participants'] if p['teamId'] == team_id]
 
-name = "Unna78" 
-tag = "EUW"
+    # Sums pour chaque section
+    def team_sum(key, subkey=None):
+        if subkey:
+            return sum(p.get(key, {}).get(subkey, 0) for p in team_players)
+        return sum(p.get(key, 0) for p in team_players)
 
-puuid = api.get_puuid(name,tag)
-matchs_id = api.get_match_ids(puuid,3)
-match_1_data = api.get_match_data(matchs_id[2])
-player_data=api.get_player_data_for_1_game(match_1_data,puuid)
-player2_data=api.get_player_data_for_1_game(match_1_data,get_opponent_puuid(match_1_data,puuid))
+    def percent(value, total):
+        return round((value / total) * 100, 2) if total else 0.0
 
-printPlayer(player_data)
-printPlayerAttckStats(player_data)
-print("============")
-printPlayer(player2_data)
-printPlayerAttckStats(player2_data)
+    # === Dégâts ===
+    dmg_to_champs = player_data.get('totalDamageDealtToChampions', 0)
+    dmg_to_buildings = player_data.get('damageDealtToBuildings', 0)
+    dmg_to_objectives = player_data.get('damageDealtToObjectives', 0) - dmg_to_buildings
 
+    team_dmg_to_champs = team_sum('totalDamageDealtToChampions')
+    team_dmg_to_buildings = team_sum('damageDealtToBuildings')
+    team_dmg_to_objectives = team_sum('damageDealtToObjectives') - team_dmg_to_buildings
 
+    # === Tanking ===
+    dmg_self_mitigated = player_data.get('damageSelfMitigated', 0)
+    total_dmg_taken = player_data.get('totalDamageTaken', 0)
+    team_dmg_self_mitigated = team_sum('damageSelfMitigated')
+    team_total_dmg_taken = team_sum('totalDamageTaken')
 
+    # === Utility ===
+    effective_heal_and_shielding = player_data.get('challenges', {}).get('effectiveHealAndShielding', 0)
+    total_damage_shielded_on_teammates = player_data.get('totalDamageShieldedOnTeammates', 0)
+    total_heals_on_teammates = player_data.get('totalHealsOnTeammates', 0)
+    total_self_heal = player_data.get('totalHeal', 0) - total_heals_on_teammates
+
+    team_effective_heal_and_shielding = team_sum('challenges', 'effectiveHealAndShielding')
+    team_damage_shielded = team_sum('totalDamageShieldedOnTeammates')
+    team_heals_on_teammates = team_sum('totalHealsOnTeammates')
+    team_self_heal = team_sum('totalHeal') - team_heals_on_teammates
+
+    # === CC ===
+    enemy_champion_immobilizations = player_data.get('challenges', {}).get('enemyChampionImmobilizations', 0)
+    time_ccing_others = player_data.get('timeCCingOthers', 0)
+    total_time_cc_dealt = player_data.get('totalTimeCCDealt', 0)
+
+    team_immobilizations = team_sum('challenges', 'enemyChampionImmobilizations')
+    team_ccing = team_sum('timeCCingOthers')
+    team_total_cc = team_sum('totalTimeCCDealt')
+
+    # === Vision ===
+    wardsKilled = player_data.get('wardsKilled', 0)
+    wardsPlaced = player_data.get('wardsPlaced', 0)
+    controlWardsPlaced = player_data.get('challenges', {}).get('controlWardsPlaced', 0)
+    wardsGuarded = player_data.get('challenges', {}).get('wardsGuarded', 0)
+
+    team_wardsKilled = team_sum('wardsKilled')
+    team_wardsPlaced = team_sum('wardsPlaced')
+    team_controlWardsPlaced = team_sum('challenges', 'controlWardsPlaced')
+    team_wardsGuarded = team_sum('challenges', 'wardsGuarded')
+
+    # === KDA & KP ===
+    kills = player_data.get('kills', 0)
+    deaths = player_data.get('deaths', 0)
+    assists = player_data.get('assists', 0)
+    team_kills = sum(p.get('kills', 0) for p in team_players)
+    kill_participation = percent(kills + assists, team_kills)
+
+    return {
+        'dmg_to_champs_%': percent(dmg_to_champs, team_dmg_to_champs),
+        'dmg_to_buildings_%': percent(dmg_to_buildings, team_dmg_to_buildings),
+        'dmg_to_objectives_%': percent(dmg_to_objectives, team_dmg_to_objectives),
+
+        'dmg_self_mitigated_%': percent(dmg_self_mitigated, team_dmg_self_mitigated),
+        'dmg_taken_%': percent(total_dmg_taken, team_total_dmg_taken),
+
+        'effective_heal_and_shielding_%': percent(effective_heal_and_shielding, team_effective_heal_and_shielding),
+        'damage_shielded_on_mates_%': percent(total_damage_shielded_on_teammates, team_damage_shielded),
+        'heals_on_teammates_%': percent(total_heals_on_teammates, team_heals_on_teammates),
+        'self_heal_%': percent(total_self_heal, team_self_heal),
+
+        'enemy_immobilizations_%': percent(enemy_champion_immobilizations, team_immobilizations),
+        'time_ccing_others_%': percent(time_ccing_others, team_ccing),
+        'total_time_cc_dealt_%': percent(total_time_cc_dealt, team_total_cc),
+
+        'wardsKilled_%': percent(wardsKilled, team_wardsKilled),
+        'wardsPlaced_%': percent(wardsPlaced, team_wardsPlaced),
+        'controlWardsPlaced_%': percent(controlWardsPlaced, team_controlWardsPlaced),
+        'wardsGuarded_%': percent(wardsGuarded, team_wardsGuarded),
+
+        'kill_participation_%': kill_participation
+    }
+
+#=========
 
 
 
