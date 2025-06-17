@@ -1,7 +1,7 @@
 import requests
 from collections import Counter
 
-API_KEY = "RGAPI-1f8fa467-0d81-47bb-8417-13acba3673eb"  # Remplace par ta clé Riot valide
+API_KEY = "RGAPI-9dba9bc6-b4e1-4727-9da4-739bc5b95fb8"  # Remplace par ta clé Riot valide
 HEADERS = {"X-Riot-Token": API_KEY}
 REGION_ROUTING = "euw1"
 
