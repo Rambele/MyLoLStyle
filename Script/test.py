@@ -1,4 +1,6 @@
 from api import RiotAPI
+from processor import ImpactProcessor
+from impact_stats_config import IMPACT_STATS
 
 def flatten_player_data(player_data):
     clean_data = {}
@@ -16,16 +18,15 @@ def flatten_player_data(player_data):
 
 
 
-api = RiotAPI(api_key="RGAPI-be3ec282-311c-43ca-8a53-4ae150d114cb")
-
+api = RiotAPI(api_key="RGAPI-5ba2ef4e-7255-4996-8c35-f0e4bd1c7666")
 puuid = api.get_puuid("Rambel", "EUW")
-match_ids = api.get_match_ids(puuid, count=1)
+match_ids = api.get_match_ids(puuid, count=1,queue=420)
 match_data = api.get_match_data(match_ids[0])
+process = ImpactProcessor(match_data)
 
-# Trouver les données du joueur via son puuid
-player_data = next((p for p in match_data["info"]["participants"] if p["puuid"] == puuid), None)
-
-player_data = flatten_player_data(player_data)
-
-for key, value in player_data.items():
-    print(f"{key}: {value}")
+impact_player = process.calculate_impact_vs_team(puuid,IMPACT_STATS)
+print(impact_player)
+print("=========================================")
+impact_player = process.compare_vs_opponent(puuid,IMPACT_STATS)
+print(impact_player)
+print(next(p for p in match_data["info"]["participants"] if p["puuid"] == puuid)["championName"])
