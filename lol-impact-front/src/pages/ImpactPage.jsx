@@ -52,6 +52,40 @@ const CATEGORIZED_STATS = {
   ]
 };
 
+const STAT_LABELS = {
+  controlWardsPlaced: "Balises de contrôle posées",
+  damageDealtToBuildings: "Dégâts aux bâtiments",
+  damageDealtToObjectives: "Dégâts aux objectifs",
+  damageDealtToTurrets: "Dégâts aux tourelles",
+  damageSelfMitigated: "Dégâts auto-mitigés",
+  deaths: "Morts",
+  effectiveHealAndShielding: "Soins et boucliers effectifs",
+  enemyChampionImmobilizations: "Immobilisations d'ennemis",
+  goldEarned: "Or gagné",
+  immobilizeAndKillWithAlly: "Immobilisation + kill avec un allié",
+  killAfterHiddenWithAlly: "Kill après s'être caché avec un allié",
+  killParticipation: "Participation aux kills",
+  pickKillWithAlly: "Kill ciblé avec un allié",
+  skillshotsDodged: "Skillshots esquivés",
+  skillshotsHit: "Skillshots touchés",
+  soloKills: "Kills solo",
+  timeCCingOthers: "Temps de contrôle de foule",
+  totalAllyJungleMinionsKilled: "Monstres alliés de jungle tués",
+  totalDamageDealt: "Dégâts totaux infligés",
+  totalDamageDealtToChampions: "Dégâts aux champions",
+  totalDamageShieldedOnTeammates: "Boucliers appliqués aux alliés",
+  totalDamageTaken: "Dégâts subis",
+  totalEnemyJungleMinionsKilled: "Monstres ennemis de jungle tués",
+  totalHeal: "Soins totaux",
+  totalHealsOnTeammates: "Soins appliqués aux alliés",
+  totalMinionsKilled: "Sbires tués",
+  totalTimeCCDealt: "Durée totale de CC infligé",
+  turretKills: "Tourelles détruites",
+  wardsGuarded: "Balises protégées",
+  wardsKilled: "Balises ennemies détruites",
+  wardsPlaced: "Balises posées"
+};
+
 const ImpactPage = () => {
   const { summonerName, tag } = useParams();
   const [allStats, setAllStats] = useState([]);
@@ -113,67 +147,65 @@ const ImpactPage = () => {
 
       {!loading && !error && (
         <div className="flex gap-4">
-        {/* Barre latérale des stats par catégorie */}
-        <div className="w-1/4 max-h-[80vh] overflow-y-auto flex flex-col gap-4">
-          {Object.entries(CATEGORIZED_STATS).map(([category, stats]) => (
-            <div key={category} className="bg-gray-800 border border-cyan-500 rounded-lg">
-              <div className="flex justify-between items-center p-3 border-b border-cyan-700 bg-gray-700">
-                <div
-                  onClick={() => toggleCategory(category)}
-                  className="cursor-pointer text-md font-semibold text-cyan-400"
-                >
-                  {category} {expandedCategories[category] ? "▲" : "▼"}
+          {/* Stats groupées */}
+          <div className="w-1/4 max-h-[80vh] overflow-y-auto flex flex-col gap-4">
+            {Object.entries(CATEGORIZED_STATS).map(([category, stats]) => (
+              <div key={category} className="bg-gray-800 border border-cyan-500 rounded-lg">
+                <div className="flex justify-between items-center p-3 border-b border-cyan-700 bg-gray-700">
+                  <div
+                    onClick={() => toggleCategory(category)}
+                    className="cursor-pointer text-md font-semibold text-cyan-400"
+                  >
+                    {category} {expandedCategories[category] ? "▲" : "▼"}
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={stats.every((s) => selectedStats.includes(s))}
+                    ref={(input) => {
+                      if (input) {
+                        const isAll = stats.every((s) => selectedStats.includes(s));
+                        const isNone = stats.every((s) => !selectedStats.includes(s));
+                        input.indeterminate = !isAll && !isNone;
+                      }
+                    }}
+                    onChange={() => {
+                      const isAllSelected = stats.every((s) => selectedStats.includes(s));
+                      setSelectedStats((prev) =>
+                        isAllSelected
+                          ? prev.filter((s) => !stats.includes(s))
+                          : [...new Set([...prev, ...stats])]
+                      );
+                    }}
+                    className="accent-cyan-400 cursor-pointer"
+                    title="Tout sélectionner / désélectionner"
+                  />
                 </div>
 
-                <input
-                  type="checkbox"
-                  checked={stats.every((s) => selectedStats.includes(s))}
-                  ref={(input) => {
-                    if (input) {
-                      const isAll = stats.every((s) => selectedStats.includes(s));
-                      const isNone = stats.every((s) => !selectedStats.includes(s));
-                      input.indeterminate = !isAll && !isNone;
-                    }
-                  }}
-                  onChange={() => {
-                    const isAllSelected = stats.every((s) => selectedStats.includes(s));
-                    setSelectedStats((prev) =>
-                      isAllSelected
-                        ? prev.filter((s) => !stats.includes(s)) // Uncheck all in category
-                        : [...new Set([...prev, ...stats])] // Add missing ones
-                    );
-                  }}
-                  className="accent-cyan-400 cursor-pointer"
-                  title="Tout sélectionner / désélectionner"
-                />
+                {expandedCategories[category] && (
+                  <div className="flex flex-col gap-2 p-3">
+                    {stats.map((stat) => (
+                      <label key={stat} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedStats.includes(stat)}
+                          onChange={() => toggleStat(stat)}
+                          className="accent-cyan-400"
+                        />
+                        <span>{STAT_LABELS[stat] || stat}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
+            ))}
+          </div>
 
-
-              {expandedCategories[category] && (
-                <div className="flex flex-col gap-2 p-3">
-                  {stats.map((stat) => (
-                    <label key={stat} className="flex items-center space-x-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={selectedStats.includes(stat)}
-                        onChange={() => toggleStat(stat)}
-                        className="accent-cyan-400"
-                      />
-                      <span>{stat}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {/* Graph */}
+          <div className="w-3/4 bg-gray-800 p-4 rounded shadow-md">
+            <ChartImpact data={filteredData} />
+          </div>
         </div>
-
-        {/* Graphique */}
-        <div className="w-3/4 bg-gray-800 p-4 rounded shadow-md">
-          <ChartImpact data={filteredData} />
-        </div>
-      </div>
-
       )}
     </div>
   );
