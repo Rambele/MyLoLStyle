@@ -2,6 +2,55 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ChartImpact from '../components/ChartImpact';
 
+const CATEGORIZED_STATS = {
+  "Dégâts": [
+    "damageDealtToBuildings",
+    "damageDealtToObjectives",
+    "damageDealtToTurrets",
+    "totalDamageDealt",
+    "totalDamageDealtToChampions",
+  ],
+  "Tankiness": [
+    "totalDamageTaken",
+    "damageSelfMitigated",
+  ],
+  "Soins et Boucliers": [
+    "effectiveHealAndShielding",
+    "totalDamageShieldedOnTeammates",
+    "totalHealsOnTeammates",
+    "totalHeal",
+  ],
+  "Contrôle": [
+    "enemyChampionImmobilizations",
+    "timeCCingOthers",
+    "totalTimeCCDealt",
+  ],
+  "Kills / Participation": [
+    "deaths",
+    "soloKills",
+    "killParticipation",
+    "pickKillWithAlly",
+    "immobilizeAndKillWithAlly",
+    "killAfterHiddenWithAlly",
+  ],
+  "Économie / CS": [
+    "goldEarned",
+    "totalMinionsKilled",
+    "totalAllyJungleMinionsKilled",
+    "totalEnemyJungleMinionsKilled",
+    "turretKills",
+  ],
+  "Skillshots": [
+    "skillshotsDodged",
+    "skillshotsHit",
+  ],
+  "Vision": [
+    "controlWardsPlaced",
+    "wardsGuarded",
+    "wardsKilled",
+    "wardsPlaced",
+  ]
+};
 
 
 const ImpactPage = () => {
