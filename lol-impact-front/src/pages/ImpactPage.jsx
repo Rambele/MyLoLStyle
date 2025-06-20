@@ -103,27 +103,27 @@ useEffect(() => {
 
       {!loading && !error && (
         <>
-          <div className="flex flex-col gap-2 mb-6 max-h-96 overflow-y-auto pr-2 border p-4 rounded bg-gray-800">
+          <div className="flex flex-col gap-6 mb-6 max-h-[40rem] overflow-y-auto pr-2">
             {Object.entries(CATEGORIZED_STATS).map(([category, stats]) => (
-            <div key={category} className="mb-4">
-              <h3 className="text-lg font-semibold text-cyan-400 mb-2">{category}</h3>
-              <div className="flex flex-wrap gap-4">
-                {stats.map((stat) => (
-                  <label key={stat} className="flex items-center space-x-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedStats.includes(stat)}
-                      onChange={() => toggleStat(stat)}
-                      className="accent-cyan-400"
-                    />
-                    <span>{stat}</span>
-                  </label>
-                ))}
+              <div key={category} className="bg-gray-800 border border-cyan-500 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-cyan-400 mb-3">{category}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {stats.map((stat) => (
+                    <label key={stat} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedStats.includes(stat)}
+                        onChange={() => toggleStat(stat)}
+                        className="accent-cyan-400"
+                      />
+                      <span>{stat}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))} 
-
+            ))}
           </div>
+
 
           <div className="bg-gray-800 p-4 rounded shadow-md">
             <ChartImpact data={filteredData} />
