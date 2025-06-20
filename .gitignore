@@ -49,6 +49,9 @@ jest.config.js
 
 # Environnement virtuel
 venv/
+__pycache__/
+*.csv
+*.log
 .env
 
 # Dossiers temporaires
