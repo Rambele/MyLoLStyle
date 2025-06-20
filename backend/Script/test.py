@@ -25,8 +25,4 @@ match_data = api.get_match_data(match_ids[0])
 process = ImpactProcessor(match_data)
 
 impact_player = process.calculate_impact_vs_team(puuid,IMPACT_STATS)
-print(impact_player)
-print("=========================================")
-impact_player = process.compare_vs_opponent(puuid,IMPACT_STATS)
-print(impact_player)
-print(next(p for p in match_data["info"]["participants"] if p["puuid"] == puuid)["championName"])
+

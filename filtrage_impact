@@ -1,0 +1,58 @@
+#Degat
+dmg_to_champs = data_player.get('totalDamageDealtToChampions', 0)
+dmg_to_buildings = data_player.get('damageDealtToBuildings', 0)
+dmg_to_objectives = data_player.get('damageDealtToObjectives', 0)- dmg_to_buildings
+
+#Tank
+dmg_self_mitigated = data_player.get('damageSelfMitigated',0)
+total_dmg_taken = data_player.get('totalDamageTaken',0)
+
+#Utility
+effective_heal_and_shielding=data_player.get('challenges', {}).get('effectiveHealAndShielding')
+total_damage_shielded_on_teammates = data_player.get('totalDamageShieldedOnTeammates', 0)
+total_heals_on_teammates = data_player.get('totalHealsOnTeammates', 0)
+totalSelfheal = data_player.get('totalHeal', 0)-total_heals_on_teammates
+
+#Immobilization and slow  
+enemy_champion_immobilizations=data_player.get('challenges', {}).get('enemyChampionImmobilizations')
+time_ccing_others = data_player.get('timeCCingOthers', 0)
+total_time_cc_dealt = data_player.get('totalTimeCCDealt', 0)
+
+#Vision
+wardsKilled = data_player.get('wardsKilled', 0)
+wardsPlaced = data_player.get('wardsPlaced', 0)
+controlWardsPlaced = data_player.get('challenges', {}).get('controlWardsPlaced')
+wardsGuarded = data_player.get('challenges', {}).get('wardsGuarded')
+
+#KDA
+kills = data_player.get('kills', 0)
+deaths = data_player.get('deaths', 0)
+assists = data_player.get('assists', 0)
+
+########################### process
+name = "Unna78" 
+tag = "EUW"
+
+puuid = api.get_puuid(name,tag)
+matchs_id = api.get_match_ids(puuid,3)
+match_1_data = api.get_match_data(matchs_id[2])
+player_data=api.get_player_data_for_1_game(match_1_data,puuid)
+player2_data=api.get_player_data_for_1_game(match_1_data,get_opponent_puuid(match_1_data,puuid))
+
+impactP1 = player_impact_in_game(match_1_data, puuid)
+impactP2 = player_impact_in_game(match_1_data, get_opponent_puuid(match_1_data, puuid))
+
+# On suppose que les deux dicts ont les mêmes clés, ou on prend l'union pour être sûr
+all_stats = set(impactP1.keys()) | set(impactP2.keys())
+
+for stat in all_stats:
+    value1 = impactP1.get(stat)
+    value2 = impactP2.get(stat)
+    
+    if isinstance(value1, (int, float)) and isinstance(value2, (int, float)):
+        diff = value1 - value2
+        print(f"{stat} : {diff:.2f}")
+    else:
+        print(f"{stat} : Donnée non disponible ou non numérique")
+
+print("===================================================")
