@@ -9,6 +9,41 @@ import {
   LabelList,
 } from 'recharts';
 
+const STAT_LABELS = {
+  controlWardsPlaced: "Balises de contrôle posées",
+  damageDealtToBuildings: "Dégâts aux bâtiments",
+  damageDealtToObjectives: "Dégâts aux objectifs",
+  damageDealtToTurrets: "Dégâts aux tourelles",
+  damageSelfMitigated: "Dégâts auto-mitigés",
+  deaths: "Morts",
+  effectiveHealAndShielding: "Soins et boucliers effectifs",
+  enemyChampionImmobilizations: "Immobilisations d'ennemis",
+  goldEarned: "Or gagné",
+  immobilizeAndKillWithAlly: "Immobilisation + kill avec un allié",
+  killAfterHiddenWithAlly: "Kill après s'être caché avec un allié",
+  killParticipation: "Participation aux kills",
+  pickKillWithAlly: "Kill ciblé avec un allié",
+  skillshotsDodged: "Skillshots esquivés",
+  skillshotsHit: "Skillshots touchés",
+  soloKills: "Kills solo",
+  timeCCingOthers: "Temps de contrôle de foule",
+  totalAllyJungleMinionsKilled: "Monstres alliés de jungle tués",
+  totalDamageDealt: "Dégâts totaux infligés",
+  totalDamageDealtToChampions: "Dégâts aux champions",
+  totalDamageShieldedOnTeammates: "Boucliers appliqués aux alliés",
+  totalDamageTaken: "Dégâts subis",
+  totalEnemyJungleMinionsKilled: "Monstres ennemis de jungle tués",
+  totalHeal: "Soins totaux",
+  totalHealsOnTeammates: "Soins appliqués aux alliés",
+  totalMinionsKilled: "Sbires tués",
+  totalTimeCCDealt: "Durée totale de CC infligé",
+  turretKills: "Tourelles détruites",
+  wardsGuarded: "Balises protégées",
+  wardsKilled: "Balises ennemies détruites",
+  wardsPlaced: "Balises posées"
+};
+
+
 const colorMap = {
   damageDealtToBuildings: '#ef4444',
   totalDamageDealt: '#3b82f6',
@@ -29,9 +64,19 @@ const ChartImpact = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
-            margin={{ top: 20, right: 30, bottom: 60, left: 20 }}
+            margin={{ top: 20, right: 30, bottom: 80, left: 20 }}
           >
-            <XAxis dataKey="stat" type="category" interval={0} angle={-45} textAnchor="end" />
+            <XAxis
+              dataKey="stat"
+              type="category"
+              interval={0}
+              angle={-30}
+              textAnchor="end"
+              tickLine={false}
+              height={80} // plus d’espace
+              tickFormatter={(stat) => STAT_LABELS[stat] || stat}
+              tick={{ dy: 10 }} // décale les textes plus bas
+            />
             <YAxis type="number" />
             <Tooltip formatter={(val) => val.toFixed(2)} />
             <Bar dataKey="value">
@@ -43,6 +88,7 @@ const ChartImpact = ({ data }) => {
                 position="top"
                 fill="white"
                 formatter={(val) => val.toFixed(2)}
+                dy={-10}
               />
             </Bar>
           </BarChart>
