@@ -1,12 +1,14 @@
 from flask import Flask, request, jsonify
 from Script import api, processor, impact_stats_config
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)  # Permet au frontend React d’accéder à l’API
 
 # Init de l'API Riot
-riot_api = api.RiotAPI(api_key="RGAPI-5ba2ef4e-7255-4996-8c35-f0e4bd1c7666")
+api_key = os.environ.get("RIOT_API_KEY")
+riot_api = api.RiotAPI(api_key=api_key)
 
 @app.route('/analyze', methods=['GET'])
 def analyze():
