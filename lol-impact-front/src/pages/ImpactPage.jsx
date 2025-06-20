@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ChartImpact from '../components/ChartImpact';
 
+
+
 const ImpactPage = () => {
   const { summonerName, tag } = useParams();
   const [allStats, setAllStats] = useState([]);
