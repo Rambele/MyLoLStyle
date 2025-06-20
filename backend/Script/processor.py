@@ -37,14 +37,14 @@ class ImpactProcessor:
         for key in stat_keys:
             player_val = self._get_stat(player, key)
             if player_val is None:
-                results[f"{key}_vs_team_%"] = None
+                results[key] = None
                 continue
 
             team_vals = [self._get_stat(p, key) for p in teammates]
             team_vals_cleaned = [v for v in team_vals if v is not None]
             team_total = sum(team_vals_cleaned)
 
-            results[f"{key}_vs_team_%"] = self._percent(player_val, team_total)
+            results[key] = self._percent(player_val, team_total)
 
         return results
 
@@ -64,12 +64,12 @@ class ImpactProcessor:
 
         comparison = {}
         for key in stat_keys:
-            player_impact = player_team_impact.get(f"{key}_vs_team_%")
-            opponent_impact = opponent_team_impact.get(f"{key}_vs_team_%")
+            player_impact = player_team_impact.get(key)
+            opponent_impact = opponent_team_impact.get(key)
 
             if player_impact is None or opponent_impact is None:
-                comparison[f"{key}_impact_diff"] = None
+                comparison[key] = None
             else:
-                comparison[f"{key}_impact_diff"] = round(player_impact - opponent_impact, 2)
+                comparison[key] = round(player_impact - opponent_impact, 2)
 
         return comparison
