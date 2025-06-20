@@ -9,23 +9,27 @@ const ImpactPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetch(`http://127.0.0.1:5000/analyze?name=${summonerName}&tag=${tag}`)
-      .then(res => {
-        if (!res.ok) throw new Error("Erreur de l'API");
-        return res.json();
-      })
-      .then(raw => {
-        const formatted = Object.entries(raw).map(([stat, value]) => ({ stat, value }));
-        setAllStats(formatted);
-        setSelectedStats(formatted.map(d => d.stat)); // sélectionne tout par défaut
-        setLoading(false);
-      })
-      .catch(err => {
-        setError("Impossible de charger les stats. " + err.message);
-        setLoading(false);
-      });
-  }, [summonerName, tag]);
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+useEffect(() => {
+  fetch(`${API_BASE_URL}/analyze?name=${summonerName}&tag=${tag}`)
+    .then(res => {
+      if (!res.ok) throw new Error("Erreur API");
+      return res.json();
+    })
+    .then(raw => {
+      const formatted = Object.entries(raw).map(([stat, value]) => ({ stat, value }));
+      setAllStats(formatted);
+      setSelectedStats(formatted.map(d => d.stat));
+      setLoading(false);
+    })
+    .catch(err => {
+      setError("Impossible de charger les stats. " + err.message);
+      setLoading(false);
+    });
+}, [summonerName, tag]);
+
 
   const toggleStat = (statName) => {
     setSelectedStats((prev) =>
