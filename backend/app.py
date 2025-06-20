@@ -23,11 +23,28 @@ def analyze():
 
     try:
         puuid = riot_api.get_puuid(summoner_name, tag)
-        match_ids = riot_api.get_match_ids(puuid, count=1, queue=420)
-        match_data = riot_api.get_match_data(match_ids[0])
-        process = processor.ImpactProcessor(match_data)
-        impact_player = process.calculate_impact_vs_team(puuid, impact_stats_config.IMPACT_STATS)
-        return jsonify(impact_player)
+        match_ids = riot_api.get_match_ids(puuid, count=10, queue=420)
+
+        impact_results = []
+        for match_id in match_ids:
+            match_data = riot_api.get_match_data(match_id)
+            process = processor.ImpactProcessor(match_data)
+            impact = process.compare_vs_opponent(puuid, impact_stats_config.IMPACT_STATS)
+            impact_results.append(impact)
+
+        # Calcul de la moyenne
+        from collections import defaultdict
+        average_impact = defaultdict(float)
+
+        for result in impact_results:
+            for stat, value in result.items():
+                average_impact[stat] += value
+
+        num_matches = len(impact_results)
+        for stat in average_impact:
+            average_impact[stat] /= num_matches
+
+        return jsonify(dict(average_impact))
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

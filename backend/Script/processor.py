@@ -1,4 +1,3 @@
-
 from typing import List
 
 class ImpactProcessor:
@@ -18,6 +17,14 @@ class ImpactProcessor:
     def _percent(self, player_val, group_val):
         return round((player_val / group_val) * 100, 2) if group_val else 0.0
 
+    def _get_stat(self, player: dict, key: str):
+        if key in player:
+            return player[key]
+        if "challenges" in player and key in player["challenges"]:
+            return player["challenges"][key]
+        print(f"[WARN] Stat '{key}' not found in player or challenges.")
+        return None
+
     def calculate_impact_vs_team(self, puuid: str, stat_keys: List[str]) -> dict:
         player = self._get_player(puuid)
         if not player:
@@ -28,8 +35,15 @@ class ImpactProcessor:
 
         results = {}
         for key in stat_keys:
-            player_val = player.get(key, 0)
-            team_total = sum(p.get(key, 0) for p in teammates)
+            player_val = self._get_stat(player, key)
+            if player_val is None:
+                results[f"{key}_vs_team_%"] = None
+                continue
+
+            team_vals = [self._get_stat(p, key) for p in teammates]
+            team_vals_cleaned = [v for v in team_vals if v is not None]
+            team_total = sum(team_vals_cleaned)
+
             results[f"{key}_vs_team_%"] = self._percent(player_val, team_total)
 
         return results
@@ -50,8 +64,12 @@ class ImpactProcessor:
 
         comparison = {}
         for key in stat_keys:
-            player_impact = player_team_impact.get(f"{key}_vs_team_%", 0)
-            opponent_impact = opponent_team_impact.get(f"{key}_vs_team_%", 0)
-            comparison[f"{key}_impact_diff"] = round(player_impact - opponent_impact, 2)
+            player_impact = player_team_impact.get(f"{key}_vs_team_%")
+            opponent_impact = opponent_team_impact.get(f"{key}_vs_team_%")
+
+            if player_impact is None or opponent_impact is None:
+                comparison[f"{key}_impact_diff"] = None
+            else:
+                comparison[f"{key}_impact_diff"] = round(player_impact - opponent_impact, 2)
 
         return comparison
