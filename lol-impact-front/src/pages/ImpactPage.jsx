@@ -1,54 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import ChartImpact from '../components/ChartImpact';
 
 const CATEGORIZED_STATS = {
   "Dégâts": [
-    "damageDealtToBuildings",
-    "damageDealtToObjectives",
-    "damageDealtToTurrets",
-    "totalDamageDealt",
-    "totalDamageDealtToChampions",
+    "damageDealtToBuildings", "damageDealtToObjectives", "damageDealtToTurrets",
+    "totalDamageDealt", "totalDamageDealtToChampions",
   ],
-  "Tankiness": [
-    "totalDamageTaken",
-    "damageSelfMitigated",
-  ],
+  "Tankiness": ["totalDamageTaken", "damageSelfMitigated"],
   "Soins et Boucliers": [
-    "effectiveHealAndShielding",
-    "totalDamageShieldedOnTeammates",
-    "totalHealsOnTeammates",
-    "totalHeal",
+    "effectiveHealAndShielding", "totalDamageShieldedOnTeammates",
+    "totalHealsOnTeammates", "totalHeal",
   ],
-  "Contrôle": [
-    "enemyChampionImmobilizations",
-    "timeCCingOthers",
-    "totalTimeCCDealt",
-  ],
+  "Contrôle": ["enemyChampionImmobilizations", "timeCCingOthers", "totalTimeCCDealt"],
   "Kills / Participation": [
-    "deaths",
-    "soloKills",
-    "killParticipation",
-    "pickKillWithAlly",
-    "immobilizeAndKillWithAlly",
-    "killAfterHiddenWithAlly",
+    "deaths", "soloKills", "killParticipation", "pickKillWithAlly",
+    "immobilizeAndKillWithAlly", "killAfterHiddenWithAlly",
   ],
   "Économie / CS": [
-    "goldEarned",
-    "totalMinionsKilled",
-    "totalAllyJungleMinionsKilled",
-    "totalEnemyJungleMinionsKilled",
-    "turretKills",
+    "goldEarned", "totalMinionsKilled", "totalAllyJungleMinionsKilled",
+    "totalEnemyJungleMinionsKilled", "turretKills",
   ],
-  "Skillshots": [
-    "skillshotsDodged",
-    "skillshotsHit",
-  ],
+  "Skillshots": ["skillshotsDodged", "skillshotsHit"],
   "Vision": [
-    "controlWardsPlaced",
-    "wardsGuarded",
-    "wardsKilled",
-    "wardsPlaced",
+    "controlWardsPlaced", "wardsGuarded", "wardsKilled", "wardsPlaced",
   ]
 };
 
@@ -63,7 +37,7 @@ const STAT_LABELS = {
   enemyChampionImmobilizations: "Immobilisations d'ennemis",
   goldEarned: "Or gagné",
   immobilizeAndKillWithAlly: "Immobilisation + kill avec un allié",
-  killAfterHiddenWithAlly: "Kill après s'être caché avec un allié",
+  killAfterHiddenWithAlly: "Kill après cachette avec allié",
   killParticipation: "Participation aux kills",
   pickKillWithAlly: "Kill ciblé avec un allié",
   skillshotsDodged: "Skillshots esquivés",
@@ -73,13 +47,13 @@ const STAT_LABELS = {
   totalAllyJungleMinionsKilled: "Monstres alliés de jungle tués",
   totalDamageDealt: "Dégâts totaux infligés",
   totalDamageDealtToChampions: "Dégâts aux champions",
-  totalDamageShieldedOnTeammates: "Boucliers appliqués aux alliés",
+  totalDamageShieldedOnTeammates: "Boucliers sur alliés",
   totalDamageTaken: "Dégâts subis",
   totalEnemyJungleMinionsKilled: "Monstres ennemis de jungle tués",
   totalHeal: "Soins totaux",
-  totalHealsOnTeammates: "Soins appliqués aux alliés",
+  totalHealsOnTeammates: "Soins sur alliés",
   totalMinionsKilled: "Sbires tués",
-  totalTimeCCDealt: "Durée totale de CC infligé",
+  totalTimeCCDealt: "Temps total de CC",
   turretKills: "Tourelles détruites",
   wardsGuarded: "Balises protégées",
   wardsKilled: "Balises ennemies détruites",
@@ -87,65 +61,52 @@ const STAT_LABELS = {
 };
 
 const ImpactPage = () => {
-  const { summonerName, tag } = useParams();
   const [allStats, setAllStats] = useState([]);
   const [selectedStats, setSelectedStats] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState(() =>
-    Object.keys(CATEGORIZED_STATS).reduce((acc, cat) => {
-      acc[cat] = true;
-      return acc;
-    }, {})
+    Object.keys(CATEGORIZED_STATS).reduce((acc, cat) => ({ ...acc, [cat]: true }), {})
   );
   const [role, setRole] = useState('');
   const [gamesCount, setGamesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
   useEffect(() => {
-    fetch(`${API_BASE_URL}/analyze?name=${summonerName}&tag=${tag}`)
+    fetch('/staticImpact.json')
       .then(res => {
-        if (!res.ok) throw new Error("Erreur API");
+        if (!res.ok) throw new Error("Erreur de lecture du fichier statique");
         return res.json();
       })
-      .then(raw => {
-        const impact = raw.impact || {};
+      .then(data => {
+        const impact = data.impact || {};
         const formatted = Object.entries(impact).map(([stat, value]) => ({ stat, value }));
         setAllStats(formatted);
         setSelectedStats(formatted.map(d => d.stat));
-        setRole(raw.role || '');
-        setGamesCount(raw.games_analyzed || 0);
+        setRole(data.role || '');
+        setGamesCount(data.games_analyzed || 0);
         setLoading(false);
       })
       .catch(err => {
-        setError("Impossible de charger les stats. " + err.message);
+        setError("Erreur de chargement: " + err.message);
         setLoading(false);
       });
-  }, [summonerName, tag]);
+  }, []);
 
-  const toggleStat = (statName) => {
-    setSelectedStats((prev) =>
-      prev.includes(statName)
-        ? prev.filter((s) => s !== statName)
-        : [...prev, statName]
+  const toggleStat = (stat) => {
+    setSelectedStats(prev =>
+      prev.includes(stat) ? prev.filter(s => s !== stat) : [...prev, stat]
     );
   };
 
   const toggleCategory = (category) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
+    setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
   };
 
   const filteredData = allStats.filter((d) => selectedStats.includes(d.stat));
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-3xl font-bold mb-6">
-        Analyse pour {summonerName}#{tag}
-      </h1>
+      <h1 className="text-3xl font-bold mb-6">Analyse statique Rambel#EUW</h1>
 
       {loading && <p className="text-blue-400 animate-pulse">Chargement des données...</p>}
       {error && <p className="text-red-500">{error}</p>}
@@ -154,7 +115,7 @@ const ImpactPage = () => {
         <>
           <div className="mb-4 text-sm text-gray-300">
             <p><span className="text-cyan-400 font-semibold">Rôle détecté :</span> {role}</p>
-            <p><span className="text-cyan-400 font-semibold">Nombre de parties analysées :</span> {gamesCount}</p>
+            <p><span className="text-cyan-400 font-semibold">Parties analysées :</span> {gamesCount}</p>
           </div>
 
           <div className="flex gap-4">
@@ -162,10 +123,7 @@ const ImpactPage = () => {
               {Object.entries(CATEGORIZED_STATS).map(([category, stats]) => (
                 <div key={category} className="bg-gray-800 border border-cyan-500 rounded-lg">
                   <div className="flex justify-between items-center p-3 border-b border-cyan-700 bg-gray-700">
-                    <div
-                      onClick={() => toggleCategory(category)}
-                      className="cursor-pointer text-md font-semibold text-cyan-400"
-                    >
+                    <div onClick={() => toggleCategory(category)} className="cursor-pointer text-md font-semibold text-cyan-400">
                       {category} {expandedCategories[category] ? "▲" : "▼"}
                     </div>
                     <input
@@ -180,14 +138,11 @@ const ImpactPage = () => {
                       }}
                       onChange={() => {
                         const isAllSelected = stats.every((s) => selectedStats.includes(s));
-                        setSelectedStats((prev) =>
-                          isAllSelected
-                            ? prev.filter((s) => !stats.includes(s))
-                            : [...new Set([...prev, ...stats])]
+                        setSelectedStats(prev =>
+                          isAllSelected ? prev.filter(s => !stats.includes(s)) : [...new Set([...prev, ...stats])]
                         );
                       }}
                       className="accent-cyan-400 cursor-pointer"
-                      title="Tout sélectionner / désélectionner"
                     />
                   </div>
                   {expandedCategories[category] && (

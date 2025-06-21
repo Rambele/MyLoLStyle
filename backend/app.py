@@ -67,9 +67,7 @@ def analyze():
             "games_analyzed": len(impact_results),
             "impact": dict(average_impact)
         }
-
         return jsonify(response)
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
