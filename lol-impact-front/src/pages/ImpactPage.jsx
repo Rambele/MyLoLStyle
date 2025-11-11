@@ -122,7 +122,7 @@ const ImpactPage = () => {
         setError("Impossible de charger les stats. " + err.message);
         setLoading(false);
       });
-  }, [summonerName, tag]);
+  }, [summonerName, tag, API_BASE_URL]);
 
   const toggleStat = (statName) => {
     setSelectedStats((prev) =>

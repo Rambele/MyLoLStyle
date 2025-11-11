@@ -24,7 +24,7 @@ def analyze():
 
     try:
         puuid = riot_api.get_puuid(summoner_name, tag)
-        match_ids = riot_api.get_match_ids(puuid, count=10, queue=420)
+        match_ids = riot_api.get_match_ids(puuid, count=30, queue=420)
 
         match_roles = []
         full_match_data = []
@@ -45,6 +45,11 @@ def analyze():
         impact_results = []
         for match_data, role in full_match_data:
             if role != most_common_role:
+                continue
+            if (
+                match_data["info"].get("gameDuration", 0) < 600 or
+                participant.get("gameEndedInEarlySurrender", False)
+            ):
                 continue
             process = processor.ImpactProcessor(match_data)
             impact = process.compare_vs_opponent(puuid, impact_stats_config.IMPACT_STATS)
