@@ -6,17 +6,16 @@ import os
 from collections import defaultdict, Counter
 
 app = Flask(__name__)
--CORS(app)
-+Compress(app)
-+# Autorise ton front Vercel (ajoute ton autre domaine si tu en as un)
-+CORS(app, resources={r"/*": {"origins": [
-+    "https://my-lo-l-style-rachids-projects-28808a7f.vercel.app"
-+]}})
+Compress(app)
+# Autorise ton front Vercel (ajoute ton autre domaine si tu en as un)
+CORS(app, resources={r"/*": {"origins": [
+    "https://my-lo-l-style-rachids-projects-28808a7f.vercel.app"
+]}})
 
 # Santé simple pour tester le déploiement
-+@app.get("/ping")
-+def ping():
-+    return "pong"
+@app.get("/ping")
+def ping():
+    return "pong"
 
 # Récupération sécurisée de la clé API Riot
 api_key = os.environ.get("RIOT_API_KEY")
