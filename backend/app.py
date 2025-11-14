@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-+from flask_compress import Compress
+from flask_compress import Compress
 from Script import api, processor, impact_stats_config
 import os
 from collections import defaultdict, Counter
