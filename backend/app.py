@@ -16,6 +16,8 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             compile(r"https://.*\.vercel\.app$"),
+            "https://impactgame.app",        # ✅ ton nouveau domaine
+            "https://www.impactgame.app",    # ✅ (si tu veux que le www marche aussi)
             "http://localhost:5173",
             "http://localhost:3000"
         ],
