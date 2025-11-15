@@ -5,7 +5,7 @@ from re import compile
 from Script import api, processor, impact_stats_config
 import os
 from collections import defaultdict, Counter
-
+from Script.api import SummonerNotFound   # 🔹 importe l’exception
 app = Flask(__name__)
 
 # Perf : compression des réponses
@@ -49,8 +49,11 @@ def analyze():
         return jsonify({"error": "Missing name or tag"}), 400
 
     try:
-        puuid = riot_api.get_puuid(summoner_name, tag)
-        match_ids = riot_api.get_match_ids(puuid, count=10, queue=420)
+        try :
+            puuid = riot_api.get_puuid(summoner_name, tag)
+        except SummonerNotFound:
+            return jsonify({"error": "SUMMONER_NOT_FOUND"}), 404
+        match_ids = riot_api.get_match_ids(puuid, count=5, queue=420)
 
         match_roles = []
         full_match_data = []

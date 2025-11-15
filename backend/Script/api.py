@@ -1,5 +1,8 @@
 import requests
 
+class SummonerNotFound(Exception):
+    pass
+
 class RiotAPI:
     def __init__(self, api_key: str, region: str = "euw1", routing: str = "europe"):
         self.api_key = api_key
@@ -10,6 +13,10 @@ class RiotAPI:
     def get_puuid(self, game_name: str, tag_line: str):
         url = f"https://{self.routing}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
         res = requests.get(url, headers=self.headers)
+        if res.status_code == 404:
+            # Pseudo inexistant
+            raise SummonerNotFound("Summoner not found")
+        res.raise_for_status()
         return res.json().get("puuid") if res.status_code == 200 else None
 
     def get_summoner_id(self, puuid: str):
