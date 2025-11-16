@@ -99,3 +99,4 @@ const ChartImpact = ({ data }) => {
 };
 
 export default ChartImpact;
+export { STAT_LABELS };
