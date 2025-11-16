@@ -50,45 +50,58 @@ def analyze():
         return jsonify({"error": "Missing name or tag"}), 400
 
     try:
-        try :
+        # 1) Récupération du PUUID
+        try:
             puuid = riot_api.get_puuid(summoner_name, tag)
         except SummonerNotFound:
             return jsonify({"error": "SUMMONER_NOT_FOUND"}), 404
-        match_ids = riot_api.get_match_ids(puuid, count=30, queue=420)
+
+        # 2) Récupération des matchs récents en SoloQ
+        match_ids = riot_api.get_match_ids(puuid, count=5, queue=420)
 
         match_roles = []
-        full_match_data = []
+        full_matches = []  # (match_data, participant, role)
 
-        # Étape 1 : Récupère les rôles et data
         for match_id in match_ids:
             match_data = riot_api.get_match_data(match_id)
-            participant = next(p for p in match_data["info"]["participants"] if p["puuid"] == puuid)
-            role_key = f"{participant['teamPosition']}".lower()  # top, jungle, mid, etc.
+            participants = match_data["info"]["participants"]
+
+            participant = next((p for p in participants if p["puuid"] == puuid), None)
+            if not participant:
+                continue
+
+            role_key = str(participant.get("teamPosition", "")).lower()
             if role_key in {"top", "jungle", "middle", "bottom", "utility"}:
                 match_roles.append(role_key)
-                full_match_data.append((match_data, role_key))
+                full_matches.append((match_data, participant, role_key))
 
-        # Étape 2 : Trouve le rôle dominant
+        if not match_roles:
+            return jsonify({"error": "Aucune game avec rôle valide trouvée"}), 400
+
+        # 3) Rôle dominant
         most_common_role = Counter(match_roles).most_common(1)[0][0]
 
-        # Étape 3 : Analyse les matchs de ce rôle uniquement
+        # 4) Analyse des matchs sur ce rôle : impact, winrate, champions
         impact_results = []
+        average_impact = defaultdict(float)
+
+        total_games = 0
+        total_wins = 0
+
         champion_stats = {}  # {champion: {"games": X, "wins": Y}}
-        for match_data, role in full_match_data:
+
+        for match_data, participant, role in full_matches:
             if role != most_common_role:
                 continue
-            
-            # On récupère à nouveau ton participant pour connaître le champion joué
-            participant = next(
-                p for p in match_data["info"]["participants"]
-                if p["puuid"] == puuid
-            )
+
+            total_games += 1
+            if participant.get("win"):
+                total_wins += 1
 
             champ_name = participant.get("championName")
             if champ_name:
                 if champ_name not in champion_stats:
                     champion_stats[champ_name] = {"games": 0, "wins": 0}
-
                 champion_stats[champ_name]["games"] += 1
                 if participant.get("win"):
                     champion_stats[champ_name]["wins"] += 1
@@ -100,63 +113,50 @@ def analyze():
         if not impact_results:
             return jsonify({"error": "Aucune game avec rôle dominant trouvée"}), 400
 
-        # Étape 4 : Moyenne
-        average_impact = defaultdict(float)
+        # 5) Moyenne des impacts
         for result in impact_results:
             for stat, value in result.items():
                 average_impact[stat] += value
+
         for stat in average_impact:
             average_impact[stat] /= len(impact_results)
 
-        # 🔹 Résumé des champions joués sur les games analysées
+        # 6) Winrate global sur les games analysées
+        winrate = round((total_wins / total_games) * 100, 1) if total_games > 0 else 0.0
+
+        # 7) Champions joués + winrate par champion
         champions_summary = []
         for champ, stats in champion_stats.items():
             games = stats["games"]
             wins = stats["wins"]
-            winrate = round((wins / games) * 100, 1) if games > 0 else 0.0
+            champ_winrate = round((wins / games) * 100, 1) if games > 0 else 0.0
 
             champions_summary.append({
                 "champion": champ,
                 "games": games,
                 "wins": wins,
-                "winrate": winrate
+                "winrate": champ_winrate
             })
 
-        # on trie : les plus joués en premier
-        champions_summary.sort(key=lambda x: x["games"], reverse=True)              
+        champions_summary.sort(key=lambda x: x["games"], reverse=True)
 
-
-        # 🔹 Calcul du winrate des games analysées (rôle dominant uniquement)
-        wins = 0
-        total = 0
-
-        for match_data, role in full_match_data:
-            if role != most_common_role:
-                continue
-
-            participant = next(
-                p for p in match_data["info"]["participants"]
-                if p["puuid"] == puuid
-            )
-
-            total += 1
-            if participant.get("win"):
-                wins += 1
-
-        winrate = round((wins / total) * 100, 1) if total > 0 else 0.0
-
-        # Étape 5 : Retour complet
+        # 8) Réponse finale
         response = {
+            "summoner_name": summoner_name,
+            "tag": tag,
             "role": most_common_role,
             "games_analyzed": len(impact_results),
-            "winrate": winrate,            
+            "winrate": winrate,
             "impact": dict(average_impact),
-            "champions": champions_summary,   # 🔥 nouveau champ
+            "champions": champions_summary,
         }
 
         return jsonify(response)
 
     except Exception as e:
+        # En prod : tu peux logger e pour toi
+        print("[ERROR] /analyze failed:", e)
         return jsonify({"error": str(e)}), 500
+
 
 # ⚠️ Pas de app.run() ici : Gunicorn démarre l'app en prod
