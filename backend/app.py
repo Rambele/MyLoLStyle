@@ -57,7 +57,7 @@ def analyze():
             return jsonify({"error": "SUMMONER_NOT_FOUND"}), 404
 
         # 2) Récupération des matchs récents en SoloQ
-        match_ids = riot_api.get_match_ids(puuid, count=5, queue=420)
+        match_ids = riot_api.get_match_ids(puuid, count=30, queue=420)
 
         match_roles = []
         full_matches = []  # (match_data, participant, role)
