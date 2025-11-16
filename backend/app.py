@@ -54,7 +54,7 @@ def analyze():
             puuid = riot_api.get_puuid(summoner_name, tag)
         except SummonerNotFound:
             return jsonify({"error": "SUMMONER_NOT_FOUND"}), 404
-        match_ids = riot_api.get_match_ids(puuid, count=20, queue=420)
+        match_ids = riot_api.get_match_ids(puuid, count=10, queue=420)
 
         match_roles = []
         full_match_data = []
@@ -91,10 +91,30 @@ def analyze():
         for stat in average_impact:
             average_impact[stat] /= len(impact_results)
 
+        # 🔹 Calcul du winrate des games analysées (rôle dominant uniquement)
+        wins = 0
+        total = 0
+
+        for match_data, role in full_match_data:
+            if role != most_common_role:
+                continue
+
+            participant = next(
+                p for p in match_data["info"]["participants"]
+                if p["puuid"] == puuid
+            )
+
+            total += 1
+            if participant.get("win"):
+                wins += 1
+
+        winrate = round((wins / total) * 100, 1) if total > 0 else 0.0
+
         # Étape 5 : Retour complet
         response = {
             "role": most_common_role,
             "games_analyzed": len(impact_results),
+            "winrate": winrate,            
             "impact": dict(average_impact)
         }
 
