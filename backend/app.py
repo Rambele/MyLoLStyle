@@ -114,12 +114,19 @@ def analyze():
             return jsonify({"error": "Aucune game avec rôle dominant trouvée"}), 400
 
         # 5) Moyenne des impacts
+        # 5) Moyenne des impacts (robuste aux None)
+        stat_counts = defaultdict(int)
+
         for result in impact_results:
             for stat, value in result.items():
-                average_impact[stat] += value
+                if isinstance(value, (int, float)):  # on ignore les None et autres
+                    average_impact[stat] += value
+                    stat_counts[stat] += 1
 
-        for stat in average_impact:
-            average_impact[stat] /= len(impact_results)
+        for stat, total in average_impact.items():
+            count = stat_counts[stat] or 1
+            average_impact[stat] = total / count
+
 
         # 6) Winrate global sur les games analysées
         winrate = round((total_wins / total_games) * 100, 1) if total_games > 0 else 0.0
