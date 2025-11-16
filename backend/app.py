@@ -54,7 +54,7 @@ def analyze():
             puuid = riot_api.get_puuid(summoner_name, tag)
         except SummonerNotFound:
             return jsonify({"error": "SUMMONER_NOT_FOUND"}), 404
-        match_ids = riot_api.get_match_ids(puuid, count=10, queue=420)
+        match_ids = riot_api.get_match_ids(puuid, count=30, queue=420)
 
         match_roles = []
         full_match_data = []
@@ -73,9 +73,26 @@ def analyze():
 
         # Étape 3 : Analyse les matchs de ce rôle uniquement
         impact_results = []
+        champion_stats = {}  # {champion: {"games": X, "wins": Y}}
         for match_data, role in full_match_data:
             if role != most_common_role:
                 continue
+            
+            # On récupère à nouveau ton participant pour connaître le champion joué
+            participant = next(
+                p for p in match_data["info"]["participants"]
+                if p["puuid"] == puuid
+            )
+
+            champ_name = participant.get("championName")
+            if champ_name:
+                if champ_name not in champion_stats:
+                    champion_stats[champ_name] = {"games": 0, "wins": 0}
+
+                champion_stats[champ_name]["games"] += 1
+                if participant.get("win"):
+                    champion_stats[champ_name]["wins"] += 1
+
             process = processor.ImpactProcessor(match_data)
             impact = process.compare_vs_opponent(puuid, impact_stats_config.IMPACT_STATS)
             impact_results.append(impact)
@@ -90,6 +107,24 @@ def analyze():
                 average_impact[stat] += value
         for stat in average_impact:
             average_impact[stat] /= len(impact_results)
+
+        # 🔹 Résumé des champions joués sur les games analysées
+        champions_summary = []
+        for champ, stats in champion_stats.items():
+            games = stats["games"]
+            wins = stats["wins"]
+            winrate = round((wins / games) * 100, 1) if games > 0 else 0.0
+
+            champions_summary.append({
+                "champion": champ,
+                "games": games,
+                "wins": wins,
+                "winrate": winrate
+            })
+
+        # on trie : les plus joués en premier
+        champions_summary.sort(key=lambda x: x["games"], reverse=True)              
+
 
         # 🔹 Calcul du winrate des games analysées (rôle dominant uniquement)
         wins = 0
@@ -115,7 +150,8 @@ def analyze():
             "role": most_common_role,
             "games_analyzed": len(impact_results),
             "winrate": winrate,            
-            "impact": dict(average_impact)
+            "impact": dict(average_impact),
+            "champions": champions_summary,   # 🔥 nouveau champ
         }
 
         return jsonify(response)

@@ -51,6 +51,14 @@ const LightImpactPage = () => {
     return STAT_LABELS[stat] || stat;
     };
 
+    // Champions joués renvoyés par le backend
+    const champions = data.champions || [];
+    const topChampions = champions.slice(0, 5); // on limite à 5
+
+    const getChampionImageUrl = (champ) =>
+    `https://ddragon.leagueoflegends.com/cdn/14.21.1/img/champion/${champ}.png`;
+
+
   return (
     <div className="relative min-h-screen text-white overflow-hidden">
       {/* Fond */}
@@ -85,11 +93,11 @@ const LightImpactPage = () => {
 
                 {/* CONTENU */}
         <main className="flex-1 flex justify-center px-4 py-10">
-          <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
 
             {/* COLONNE GAUCHE : TOP 5 STATS */}
             {topImpactStats.length > 0 && (
-              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl shadow-2xl px-6 py-6">
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl shadow-xl px-4 py-4 text-sm">
                 <h2 className="text-sm font-semibold text-slate-200 mb-3">
                   Tes 5 stats les plus impactantes
                 </h2>
@@ -102,7 +110,7 @@ const LightImpactPage = () => {
                     return (
                       <div
                         key={statName}
-                        className="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3"
+                        className="bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-2"
                       >
                         {/* LABEL + VALEUR */}
                         <div className="flex justify-between items-center">
@@ -118,7 +126,7 @@ const LightImpactPage = () => {
                         </div>
 
                         {/* BARRE */}
-                        <div className="mt-2 w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="mt-2 w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                           <div
                             className={`h-full ${
                               isPositive ? "bg-green-500" : "bg-red-500"
@@ -220,6 +228,44 @@ const LightImpactPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* COLONNE DROITE EXT : CHAMPIONS JOUÉS */}
+            {topChampions.length > 0 && (
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl shadow-2xl px-6 py-6">
+                <h2 className="text-sm font-semibold text-slate-200 mb-3">
+                  Champions joués (échantillon)
+                </h2>
+
+                <div className="space-y-3">
+                  {topChampions.map((c) => (
+                    // ici
+                    <div key={c.champion} className="flex items-center gap-3">
+                    {/* Image du champion */}
+                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+                        <img
+                        src={getChampionImageUrl(c.champion)}
+                        alt={c.champion}
+                        className="h-full w-full object-cover"
+                        />
+                    </div>
+
+                    {/* Infos */}
+                    <div className="flex flex-col">
+                        <span className="text-sm text-slate-200 font-medium">
+                        {c.champion}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                        {c.games} games • {c.winrate}%
+                        </span>
+                    </div>
+                    </div>
+
+                  ))}
+                </div>
+              </div>
+            )}
+
+
           </div>
         </main>
 
