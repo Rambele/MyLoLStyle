@@ -33,7 +33,7 @@ const HomePage = () => {
       }
 
       navigate(
-        `/impact/${encodeURIComponent(summonerName)}/${encodeURIComponent(tag)}`,
+        `/impact-light/${encodeURIComponent(summonerName)}/${encodeURIComponent(tag)}`,
         { state: { data } }
       );
     } catch (err) {
